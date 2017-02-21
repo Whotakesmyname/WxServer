@@ -37,14 +37,14 @@ class Login(threading.Thread):
                 except AssertionError:
                     itchat.send_msg('学号应为8位纯数字，请重新输入8位学号', wechatid)
                 else:
-                    cursor = self.connection.execute('SELECT * FROM user WHERE id == ?', (int(text),))
+                    cursor = self.connection.execute('SELECT * FROM User WHERE id == ? AND wechatid == ?', (text,wechatid))
                     dbresult = cursor.fetchone()
                     cursor.close()
                     # noinspection PyTypeChecker
                     if not dbresult:  # id never login
                         self.status[wechatid] = [2, text]
                         itchat.send_msg('请回复教务网站密码', wechatid)
-                    elif wechatid in dbresult['wechatid'].split(';'):  # ever login
+                    elif dbresult:  # ever login
                         self.status[wechatid] = [0, text]
                         itchat.send_msg('你已经完成过登录，覆盖原信息请回复overwrite，退出登录请回复1', wechatid)
                     else:  # id ever login but not this wechatid
