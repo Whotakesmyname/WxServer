@@ -5,7 +5,7 @@ import threading
 
 import itchat
 
-from actions import QueryManager, Login
+from actions import QueryManager, Login, GetScore
 from utils import autoreply, showqrcode, LastUpdatedOrderedDict
 
 login_queue = queue.Queue(maxsize=30)
@@ -27,7 +27,8 @@ command_words = {'login': 'login', '选课': 'select_course', '查分': 'get_sco
 special_status = {}  # {wechatid: 'login'| 'get_score'| 'select_course'...}
 status_lock = threading.RLock()
 status_queue = {'login': login_queue, 'get_score': get_score_queue, 'select_course': None}
-welcome_msgs = {'login': '请回复你的学号', 'get_score': ''}
+welcome_msgs = {'login': '请回复你的学号',
+                'get_score': '请回复要查询的学期，2016年秋季学期请回复 2016a\n秋 a=autumn; 春 s=spring\n回复其他信息将查询上一学期的成绩'}
 
 query_pool = LastUpdatedOrderedDict()  # {'stuid': Query}
 query_pool_lock = threading.RLock()
@@ -64,11 +65,11 @@ def text_reply(msg):
         return helpmsg
 
 
+daemon_thread_list = [QueryManager(query_pool, query_pool_lock),
+                      Login(login_queue, special_status, status_lock, query_pool, query_pool_lock),
+                      GetScore(get_score_queue, query_pool, query_pool_lock, special_status, status_lock)]
 itchat.auto_login(qrCallback=showqrcode, hotReload=True)
-login_thread = Login(login_queue, special_status, status_lock)
-login_thread.setDaemon(True)
-login_thread.start()
-query_manager = QueryManager(query_pool, query_pool_lock)
-query_manager.setDaemon(True)
-query_manager.start()
+for thread in daemon_thread_list:
+    thread.setDaemon(True)
+    thread.start()
 itchat.run()

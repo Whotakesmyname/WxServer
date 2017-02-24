@@ -3,11 +3,12 @@
 import sqlite3
 import threading
 import time
+import os
 
 import itchat
 
 from bfsujwc import Query
-from utils import strftimestamp
+from utils import strftimestamp, form2pic
 
 
 class Login(threading.Thread):
@@ -107,9 +108,9 @@ class Login(threading.Thread):
                     itchat.send_msg('重新绑定请回复 overwrite ，否则请回复 1 退出', wechatid)
 
 
-class Get_Score(threading.Thread):
+class GetScore(threading.Thread):
     def __init__(self, get_score_queue, query_pool, query_pool_lock, special_status, status_lock):
-        super(Get_Score, self).__init__()
+        super(GetScore, self).__init__()
         self.queue = get_score_queue
         self.pool = query_pool
         self.p_lock = query_pool_lock
@@ -137,6 +138,13 @@ class Get_Score(threading.Thread):
         else:
             return query
 
+    @classmethod
+    def send_score_img(cls, score, wechatid):
+        path = form2pic(score, './scoreimgtemp/' + str(time.time() * 1000) + '.bmp')
+        itchat.send_image(path, wechatid)
+        time.sleep(10)
+        os.remove(path)
+
     def run(self):
         while 1:
             wechatid, text = self.queue.get()
@@ -150,6 +158,13 @@ class Get_Score(threading.Thread):
             else:
                 query = self.get_query(dbresult['id'], dbresult['password'])
                 result = query.get_score(text)
+                if not result:
+                    itchat.send_msg('翻了翻似乎你这学期并没有成绩……', wechatid)
+                else:
+                    itchat.send_msg('正在发送请稍候', wechatid)
+                    thread = threading.Thread(target=GetScore.send_score_img, args=(result, wechatid))
+                    thread.setDaemon(True)
+                    thread.start()
 
 
 class QueryManager(threading.Thread):
