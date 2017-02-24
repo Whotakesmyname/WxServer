@@ -7,6 +7,7 @@ import time
 import itchat
 
 from bfsujwc import Query
+from utils import strftimestamp
 
 
 class Login(threading.Thread):
@@ -15,10 +16,17 @@ class Login(threading.Thread):
         self.login_queue = login_queue
         self.status = {}  # key: wechatid, value: [status_num, stuid, password]
         self.connection = sqlite3.connect('./data/jwc.db', check_same_thread=False)
+        self.connection.row_factory = sqlite3.Row
         self.special_status = special_status
         self.status_lock = status_lock
         self.query_pool = query_pool
         self.query_lock = query_lock
+
+    def exit(self, wechatid):
+        self.status.pop(wechatid)
+        self.status_lock.acquire()
+        self.special_status.pop(wechatid)
+        self.status_lock.release()
 
     def run(self):
         """ status:
@@ -37,28 +45,28 @@ class Login(threading.Thread):
                 except AssertionError:
                     itchat.send_msg('学号应为8位纯数字，请重新输入8位学号', wechatid)
                 else:
-                    cursor = self.connection.execute('SELECT * FROM User WHERE id == ?', (text, ))
-                    dbresult = cursor.fetchall()
+                    cursor = self.connection.execute('SELECT * FROM User WHERE wechatid == ?', (wechatid,))
+                    dbresult = cursor.fetchone()
                     cursor.close()
                     if not dbresult:
                         login_flag = 0
                     else:
-                        for record in dbresult:
-                            # noinspection PyTypeChecker
-                            if record['wechatid'] == wechatid:
-                                login_flag = 1
-                                break
+                        # noinspection PyTypeChecker
+                        if dbresult['id'] == text:
+                            login_flag = 1
                         else:
                             login_flag = -1
-                    if login_flag == 0:  # id never login
+                    if login_flag == 0:  # wechatid never login
                         self.status[wechatid] = [2, text]
                         itchat.send_msg('请回复教务网站密码', wechatid)
-                    elif login_flag == 1:  # ever login
+                    elif login_flag == 1:  # already login
+                        self.exit(wechatid)
+                        itchat.send_msg('你已经完成过此学号的登录，无需重复登录\n已退出登陆流程', wechatid)
+                    else:  # id ever login but not this studentid
                         self.status[wechatid] = [0, text]
-                        itchat.send_msg('你已经完成过登录，覆盖原信息请回复overwrite，退出登录请回复1', wechatid)
-                    else:  # id ever login but not this wechatid
-                        self.status[wechatid] = [2, text]
-                        itchat.send_msg('请回复教务网站密码', wechatid)
+                        # noinspection PyTypeChecker
+                        itchat.send_msg('本微信账号已于{}与学号{}绑定，重新绑定请回复 overwrite ，否则请回复 1 退出'.format(
+                            strftimestamp(dbresult['createtime']), dbresult['id']), wechatid)
             elif status[0] == 2:
                 self.status[wechatid][0] = 3
                 self.status[wechatid].append(text)
@@ -67,25 +75,23 @@ class Login(threading.Thread):
                 try:
                     query.login()  # needed to be recycled
                 except TimeoutError:
-                    self.status.pop(wechatid)
-                    self.status_lock.acquire()
-                    self.special_status.pop(wechatid)
-                    self.status_lock.release()
+                    self.exit(wechatid)
                     itchat.send_msg('验证失败，请确认学号密码后回复 login 重新尝试', wechatid)
                     del query
                 else:
                     name = query.get_name()
+                    cursor = self.connection.cursor()
                     if name is not None:
-                        self.connection.execute('INSERT INTO user VALUES (?, ?, ?, ?, ?)',
-                                                (int(status[1]), wechatid, name, text, time.time()))
+                        cursor.execute('INSERT INTO ID VALUES (?, ?, ?, 0)', (status[1], text, name))
+                        cursor.execute('INSERT INTO User VALUES (?, ?, ?, ?)',
+                                       (wechatid, status[1], query.login_time, query.login_time))
                     else:
-                        self.connection.execute('INSERT INTO user VALUES (?, ?, NULL, ?, ?)',
-                                                (int(status[1]), wechatid, text, time.time()))
+                        cursor.execute('INSERT INTO ID VALUES (?, ?, NULL, 0)', (status[1], text))
+                        cursor.execute('INSERT INTO User VALUES (?, ?, ?, ?)',
+                                       (wechatid, status[1], query.login_time, query.login_time))
                     self.connection.commit()
-                    self.status.pop(wechatid)
-                    self.status_lock.acquire()
-                    self.special_status.pop(wechatid)
-                    self.status_lock.release()
+                    cursor.close()
+                    self.exit(wechatid)
                     itchat.send_msg('验证成功，回复 选课 尝试选课，回复 查分 查询成绩，更多帮助请回复 h ', wechatid)
                     self.query_lock.acquire()
                     self.query_pool[status[1]] = query
@@ -93,15 +99,12 @@ class Login(threading.Thread):
             elif status[0] == 0:
                 if text == 'overwrite':
                     self.status[wechatid][0] = 2
-                    itchat.send_msg('请回复新的教务网站密码', wechatid)
+                    itchat.send_msg('请回复该学号的教务网站密码', wechatid)
                 elif text == '1':
-                    self.status.pop(wechatid)
-                    self.status_lock.acquire()
-                    self.special_status.pop(wechatid)
-                    self.status_lock.release()
+                    self.exit(wechatid)
                     itchat.send_msg('已退出登录程序', wechatid)
                 else:
-                    itchat.send_msg('你已经完成过登录，覆盖原信息请回复overwrite，退出登录请回复1', wechatid)
+                    itchat.send_msg('重新绑定请回复 overwrite ，否则请回复 1 退出', wechatid)
 
 
 class Get_Score(threading.Thread):
@@ -112,10 +115,41 @@ class Get_Score(threading.Thread):
         self.p_lock = query_pool_lock
         self.special_status = special_status
         self.status_lock = status_lock
+        self.conn = sqlite3.connect('./data/jwc.db', check_same_thread=False)
+        self.conn.row_factory = sqlite3.Row
+
+    def exit(self, wechatid):
+        self.status_lock.acquire()
+        self.special_status.pop(wechatid)
+        self.status_lock.release()
+
+    def get_query(self, stuid, password):
+        self.p_lock.acquire()
+        query = self.pool.get(stuid)
+        self.p_lock.release()
+        if not query or query.login_time < time.time() - 1800:
+            query = Query(stuid, password)
+            query.login()
+            self.p_lock.acquire()
+            self.pool[stuid] = query
+            self.p_lock.release()
+            return query
+        else:
+            return query
 
     def run(self):
         while 1:
             wechatid, text = self.queue.get()
+            cursor = self.conn.execute(
+                'SELECT User.id, ID.password FROM User, ID WHERE User.id == ID.id AND User.wechatid == ?', wechatid)
+            dbresult = cursor.fetchone()
+            cursor.close()
+            if not dbresult:
+                self.exit(wechatid)
+                itchat.send_msg('本微信号尚未绑定任何账号，请回复 login 进行绑定后重试', wechatid)
+            else:
+                query = self.get_query(dbresult['id'], dbresult['password'])
+                result = query.get_score(text)
 
 
 class QueryManager(threading.Thread):

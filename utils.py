@@ -4,6 +4,7 @@
 import collections
 import json
 import os
+import time
 from io import BytesIO
 
 import requests
@@ -65,3 +66,9 @@ class LastUpdatedOrderedDict(collections.OrderedDict):
         if key in self:
             del self[key]
         super(LastUpdatedOrderedDict, self).__setitem__(self, key, value)
+
+
+def strftimestamp(timestamp: float = None, format: str = '%Y-%m-%d %H:%M:%S') -> str:
+    if not timestamp:
+        timestamp = time.time()
+    return time.strftime(format, time.localtime(timestamp))

@@ -38,24 +38,19 @@
       <DataType>TEXT(0,-1)|12</DataType>
       <NotNull>1</NotNull>
     </column>
-    <column id="12" parent="4" name="lasttime">
+    <column id="12" parent="4" name="createtime">
       <Position>2</Position>
-      <DataType>INTEGER(0,-1)|4</DataType>
+      <DataType>REAL(0,-1)|6</DataType>
     </column>
-    <column id="13" parent="4" name="createtime">
+    <column id="13" parent="4" name="lasttime">
       <Position>3</Position>
-      <DataType>INT(0,-1)|4</DataType>
+      <DataType>REAL(0,-1)|6</DataType>
     </column>
-    <index id="14" parent="4" name="wechatid_stuid_wechatid_uindex">
+    <key id="14" parent="4">
       <ColNames>wechatid</ColNames>
-      <Unique>1</Unique>
-    </index>
-    <key id="15" parent="4" name="wechatid_stuid_id_wechatid_pk">
-      <ColNames>id
-wechatid</ColNames>
       <Primary>1</Primary>
     </key>
-    <foreign-key id="16" parent="4" name="#FAKE_User_1">
+    <foreign-key id="15" parent="4" name="#FAKE_User_1">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>id</ColNames>
       <Deferrable>1</Deferrable>
