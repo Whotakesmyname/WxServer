@@ -181,7 +181,7 @@ class QueryManager(threading.Thread):
             time.sleep(1800)
             self.lock.acquire()
             try:
-                while self.pool.popitem(True).login_time < threshold_time:
+                while self.pool.popitem(True)[1].login_time < threshold_time:
                     continue
             except KeyError:
                 pass

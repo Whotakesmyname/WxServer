@@ -3,9 +3,7 @@
 
 import collections
 import json
-import os
 import time
-import itchat
 from io import BytesIO
 
 import requests
@@ -44,10 +42,6 @@ def form2pic(form, path=None):
             if reallen(_row[index]) > max_length[index]:
                 max_length[index] = reallen(_row[index])
     font = ImageFont.truetype("inziu-SC-regular.ttc", 12)  # origin 12
-    # 特殊调整
-    head = '|{:^2}|{:^2}|{:^11}|{:^31}|{:^3}|{:^8}|{:^7}|{:>2}|{:^4}|{:^4}|'.format('学年', '学期', '课程号', '课程名', '课序号',
-                                                                                    '总评',
-                                                                                    '学分', '学时', '考试性质', '及格标志')
     new_head = ('学年', '学期', '课程号', '课程名', '课序号', '总评', '学分', '学时', '考试性质', '及格标志')
     form.insert(0, new_head)
     _form = []
@@ -87,7 +81,7 @@ def showqrcode(uuid, status, qrcode):
 
 
 class LastUpdatedOrderedDict(collections.OrderedDict):
-    'Store items in the order the keys were last added'
+    """Store items in the order the keys were last added"""
 
     def __setitem__(self, key, value, **kwargs):
         if key in self:
@@ -95,7 +89,7 @@ class LastUpdatedOrderedDict(collections.OrderedDict):
         super(LastUpdatedOrderedDict, self).__setitem__(key, value)
 
 
-def strftimestamp(timestamp: float = None, format: str = '%Y-%m-%d %H:%M:%S') -> str:
+def strftimestamp(timestamp: float = None, pattern: str = '%Y-%m-%d %H:%M:%S') -> str:
     if not timestamp:
         timestamp = time.time()
-    return time.strftime(format, time.localtime(timestamp))
+    return time.strftime(pattern, time.localtime(timestamp))

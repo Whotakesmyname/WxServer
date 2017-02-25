@@ -36,7 +36,7 @@ query_pool_lock = threading.RLock()
 
 @itchat.msg_register('Text', isGroupChat=False)
 def text_reply(msg):
-    global special_status, status_lock, status_method
+    global special_status, status_lock
     status_lock.acquire()
     user_status = special_status.get(msg['FromUserName'])
     status_lock.release()
@@ -51,15 +51,15 @@ def text_reply(msg):
         return welcome_msgs[user_status]
     elif msg['Text'] == 'h':
         helpmsg = \
-            '''             帮助
-            目前提供成绩查询、快速选课功能，仅支持北京外国语大学教务系统。
-            在首次使用教务相关功能前请回复 login 进行登录
-            请注意，当前选课前必须知道目标课程的课程编号！
-                成绩查询 请回复 查分
-                快速选课 请回复 选课
-            除此以外的消息你将会和一个智力低下的机器人聊天，据说她能查天气询时事之类……诸位自行探索
-            开发细节和碎碎念请回复 -help 获取
-                      2017/1/30'''
+            '''             ******帮助******
+          目前提供成绩查询、快速选课功能，仅支持北京外国语大学教务系统。
+          在首次使用教务相关功能前请回复 login 进行登录
+          请注意，当前选课前必须知道目标课程的课程编号！
+              成绩查询 请回复 查分
+              快速选课 请回复 选课
+          除此以外的消息你将会和一个智力低下的机器人聊天，据说她能查天气询时事之类……诸位自行探索
+          开发细节和碎碎念请回复 -help 获取
+                           2017/1/30'''
         return helpmsg
     else:
         return autoreply(msg['Text'], msg['FromUserName'])  # needed to be optimized
