@@ -43,8 +43,7 @@ def form2pic(form, path=None):
                 max_length[index] = reallen(_row[index])
     font = ImageFont.truetype("inziu-SC-regular.ttc", 12)  # origin 12
     new_head = ('学年', '学期', '课程号', '课程名', '课序号', '总评', '学分', '学时', '考试性质', '及格标志')
-    form.insert(0, new_head)
-    _form = []
+    _form = [[x.center(max_length[y] - count_2len_characters(x)) for y, x in enumerate(new_head)]]
     for _row in form:
         _form.append([x.center(max_length[y] - count_2len_characters(x)) for y, x in enumerate(_row)])
     _form.insert(1, ["-" * (sum(max_length) + 11)])
@@ -63,6 +62,14 @@ def form2pic(form, path=None):
             line = '|'.join(line)
         draw.text((x, y), line, font=font, fill="#000000")
         y += 14
+    average = 0
+    n_notTX = 0
+    for _row in form:
+        if '*' not in _row[3]:
+            average += int(_row[5])
+            n += 1
+    else:
+        average /= n_notTX
 
     if not path:
         fileobj = BytesIO()

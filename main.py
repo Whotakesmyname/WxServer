@@ -10,6 +10,7 @@ from utils import autoreply, showqrcode, LastUpdatedOrderedDict
 
 login_queue = queue.Queue(maxsize=30)
 get_score_queue = queue.Queue(maxsize=30)
+select_course_queue = queue.Queue(maxsize=30)
 
 
 @itchat.msg_register('Friends')
@@ -17,6 +18,7 @@ def add_friends(msg):
     welcomemsg = '''你好~\n
     一个并不成熟的工具，希望能帮助到(北外的)你\n
     首次使用查询成绩、快速选课等功能前，请回复login进行登录\n
+    回复 h 获得进一步帮助\n
     源码请访问项目主页：还没建好\n'''
     itchat.add_friend(**msg['Text'])
     # occupied for check wechatid
@@ -26,7 +28,7 @@ def add_friends(msg):
 command_words = {'login': 'login', '选课': 'select_course', '查分': 'get_score'}
 special_status = {}  # {wechatid: 'login'| 'get_score'| 'select_course'...}
 status_lock = threading.RLock()
-status_queue = {'login': login_queue, 'get_score': get_score_queue, 'select_course': None}
+status_queue = {'login': login_queue, 'get_score': get_score_queue, 'select_course': select_course_queue}
 welcome_msgs = {'login': '请回复你的学号',
                 'get_score': '请回复要查询的学期，\n如2016年秋季学期请回复\n2016a\ns(spring)=春；a(autumn)=秋\n回复其他任意信息将默认查询上一学期的成绩'}
 

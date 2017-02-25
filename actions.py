@@ -4,10 +4,10 @@ import sqlite3
 import threading
 import time
 import os
-
+import re
 import itchat
 
-from bfsujwc import Query
+from bfsujwc import Query, UseridError
 from utils import strftimestamp, form2pic
 
 
@@ -167,6 +167,83 @@ class GetScore(threading.Thread):
                     thread.setDaemon(True)
                     thread.start()
                     self.exit(wechatid)
+
+
+class SelectCourse(threading.Thread):
+    pattern = re.compile(r'(.+);(\d+)')
+
+    def __init__(self, queue, query_pool, query_pool_lock, special_status, special_status_lock):
+        super().__init__()
+        self.queue = queue
+        self.pool = query_pool
+        self.p_lock = query_pool_lock
+        self.special_status = special_status
+        self.status_lock = special_status_lock
+        self.conn = sqlite3.connect('./data/jwc.db', check_same_thread=False)
+        self.conn.row_factory = sqlite3.Row
+
+    def exit(self, wechatid):
+        self.status_lock.acquire()
+        self.special_status.pop(wechatid)
+        self.status_lock.release()
+
+    def get_query(self, stuid, password):
+        self.p_lock.acquire()
+        query = self.pool.get(stuid)
+        self.p_lock.release()
+        if not query or query.login_time < time.time() - 1800:
+            query = Query(stuid, password)
+            query.login()
+            self.p_lock.acquire()
+            self.pool[stuid] = query
+            self.p_lock.release()
+            return query
+        else:
+            return query
+
+    def run(self):
+        while 1:
+            wechatid, text = self.queue.get()
+            if ';' in text:
+                split = self.__class__.pattern.match(text)
+                if not split:
+                    itchat.send_msg('课序号应为纯数字，请检查输入后重新输入', wechatid)
+                    continue
+                else:
+                    courseid = split.group(1)
+                    courseseq = split.group(2)
+            else:
+                courseid = text
+                courseseq = '1'
+            cursor = self.conn.execute(
+                'SELECT User.id, ID.password FROM User, ID WHERE User.id == ID.id AND User.wechatid == ?', (wechatid,))
+            dbresult = cursor.fetchone()
+            cursor.close()
+            if not dbresult:
+                self.exit(wechatid)
+                itchat.send_msg('本微信号尚未绑定任何账号，请回复 login 进行绑定后重试', wechatid)
+            else:
+                query = self.get_query(dbresult['id'], dbresult['password'])
+
+                def select(self, query, wechatid):
+                    for _ in range(3):
+                        try:
+                            if query.quickselect(courseid, courseseq) == 1:
+                                self.exit(wechatid)
+                                itchat.send_msg('选课成功！请务必注意及时登陆教务系统检查！', wechatid)
+                                break
+                        except UseridError:
+                            self.exit(wechatid)
+                            itchat.send_msg('获取选课信息失败，请确认选课系统已开放\n已退出选课流程', wechatid)
+                            break
+                    else:
+                        self.exit(wechatid)
+                        itchat.send_msg('尝试失败，请确认无误后重新尝试或手动选课\n已退出选课流程', wechatid)
+
+                t = threading.Thread(target=select, args=(self, query, wechatid))
+                t.setDaemon(True)
+                itchat.send_msg('正在尝试选课请稍后……', wechatid)
+                t.start()
 
 
 class QueryManager(threading.Thread):
