@@ -19,6 +19,7 @@ def add_friends(msg):
     一个并不成熟的工具，希望能帮助到(北外的)你\n
     首次使用查询成绩、快速选课等功能前，请回复login进行登录\n
     回复 h 获得进一步帮助\n
+    任何时候回复esc退出当前流程\n
     源码请访问项目主页：https://github.com/Whotakesmyname/WxServer\n'''
     itchat.add_friend(**msg['Text'])
     # occupied for check wechatid
@@ -43,7 +44,14 @@ def text_reply(msg):
     status_lock.acquire()
     user_status = special_status.get(msg['FromUserName'])
     status_lock.release()
-    if user_status:
+    if msg['Text'] == 'esc':
+        status_lock.acquire()
+        _status = special_status.pop(msg['FromUserName'], None)
+        status_lock.release()
+        if _status == 'login':
+            daemon_thread_list[1].status.pop(msg['FromUserName'])
+        return '已退出所有流程'
+    elif user_status:
         status_queue[user_status].put((msg['FromUserName'], msg['Text']))
         return
     elif msg['Text'] in command_words:
