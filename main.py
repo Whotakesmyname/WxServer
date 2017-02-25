@@ -5,7 +5,7 @@ import threading
 
 import itchat
 
-from actions import QueryManager, Login, GetScore
+from actions import QueryManager, Login, GetScore, SelectCourse
 from utils import autoreply, showqrcode, LastUpdatedOrderedDict
 
 login_queue = queue.Queue(maxsize=30)
@@ -30,7 +30,8 @@ special_status = {}  # {wechatid: 'login'| 'get_score'| 'select_course'...}
 status_lock = threading.RLock()
 status_queue = {'login': login_queue, 'get_score': get_score_queue, 'select_course': select_course_queue}
 welcome_msgs = {'login': '请回复你的学号',
-                'get_score': '请回复要查询的学期，\n如2016年秋季学期请回复\n2016a\ns(spring)=春；a(autumn)=秋\n回复其他任意信息将默认查询上一学期的成绩'}
+                'get_score': '请回复要查询的学期，\n如2016年秋季学期请回复\n2016a\ns(spring)=春；a(autumn)=秋\n回复其他任意信息将默认查询上一学期的成绩',
+                'select_course': '***须知\n  工具未经大量测试谨慎使用\n    请输入课程的课程号(及课序号，一般为1，不填默认为1)，你可以从通知文件中获取、从其他已登入系统的同学处窥得……\n输入格式为\n 课程号[;课序号]\n    方括号内为选填内容，若选填课序号请将二者用分号隔开\n    *根据教务处通知，本学期校通选课为区分2014级/2015 16级，出现多门通选不同模块相同课程相同课程号相同课序号，由此导致的后果未知；因此选课成功后请务必人工登录教务系统确认，后果自负'}
 
 query_pool = LastUpdatedOrderedDict()  # {'stuid': Query}
 query_pool_lock = threading.RLock()
@@ -69,7 +70,8 @@ def text_reply(msg):
 
 daemon_thread_list = [QueryManager(query_pool, query_pool_lock),
                       Login(login_queue, special_status, status_lock, query_pool, query_pool_lock),
-                      GetScore(get_score_queue, query_pool, query_pool_lock, special_status, status_lock)]
+                      GetScore(get_score_queue, query_pool, query_pool_lock, special_status, status_lock),
+                      SelectCourse(select_course_queue, query_pool, query_pool_lock, special_status, status_lock)]
 # itchat.auto_login(qrCallback=showqrcode, hotReload=True) # test on PC
 itchat.auto_login(enableCmdQR=2, hotReload=True)  # run on server
 for thread in daemon_thread_list:
