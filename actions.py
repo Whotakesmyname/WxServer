@@ -71,10 +71,10 @@ class Login(threading.Thread):
             elif status[0] == 2:
                 self.status[wechatid][0] = 3
                 self.status[wechatid].append(text)
-                itchat.send_msg('正在验证请稍候……')
+                itchat.send_msg('正在验证请稍候……', wechatid)
                 query = Query(self.status[wechatid][1], self.status[wechatid][2])
                 try:
-                    query.login()  # needed to be recycled
+                    query.login()
                 except TimeoutError:
                     self.exit(wechatid)
                     itchat.send_msg('验证失败，请确认学号密码后回复 login 重新尝试', wechatid)
@@ -149,7 +149,7 @@ class GetScore(threading.Thread):
         while 1:
             wechatid, text = self.queue.get()
             cursor = self.conn.execute(
-                'SELECT User.id, ID.password FROM User, ID WHERE User.id == ID.id AND User.wechatid == ?', wechatid)
+                'SELECT User.id, ID.password FROM User, ID WHERE User.id == ID.id AND User.wechatid == ?', (wechatid,))
             dbresult = cursor.fetchone()
             cursor.close()
             if not dbresult:
@@ -159,12 +159,14 @@ class GetScore(threading.Thread):
                 query = self.get_query(dbresult['id'], dbresult['password'])
                 result = query.get_score(text)
                 if not result:
-                    itchat.send_msg('翻了翻似乎你这学期并没有成绩……', wechatid)
+                    self.exit(wechatid)
+                    itchat.send_msg('翻了翻似乎你这学期并没有成绩……将退出查分', wechatid)
                 else:
-                    itchat.send_msg('正在发送请稍候', wechatid)
+                    itchat.send_msg('正在生成{}年{}季学期成绩，请稍候……'.format(result[0][0], result[0][1]), wechatid)
                     thread = threading.Thread(target=GetScore.send_score_img, args=(result, wechatid))
                     thread.setDaemon(True)
                     thread.start()
+                    self.exit(wechatid)
 
 
 class QueryManager(threading.Thread):

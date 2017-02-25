@@ -39,7 +39,7 @@ def form2pic(form, path=None):
     """ form is a list，whose elements are also lists，which contain strings
     output a BytesIO containing a bmp"""
     max_length = [4, 4, 6, 6, 6, 4, 4, 4, 8, 8]
-    for index in range(len(form)):
+    for index in range(len(form[0])):
         for _row in form:
             if reallen(_row[index]) > max_length[index]:
                 max_length[index] = reallen(_row[index])
@@ -92,7 +92,7 @@ class LastUpdatedOrderedDict(collections.OrderedDict):
     def __setitem__(self, key, value, **kwargs):
         if key in self:
             del self[key]
-        super(LastUpdatedOrderedDict, self).__setitem__(self, key, value)
+        super(LastUpdatedOrderedDict, self).__setitem__(key, value)
 
 
 def strftimestamp(timestamp: float = None, format: str = '%Y-%m-%d %H:%M:%S') -> str:

@@ -28,7 +28,7 @@ special_status = {}  # {wechatid: 'login'| 'get_score'| 'select_course'...}
 status_lock = threading.RLock()
 status_queue = {'login': login_queue, 'get_score': get_score_queue, 'select_course': None}
 welcome_msgs = {'login': '请回复你的学号',
-                'get_score': '请回复要查询的学期，2016年秋季学期请回复 2016a\n秋 a=autumn; 春 s=spring\n回复其他信息将查询上一学期的成绩'}
+                'get_score': '请回复要查询的学期，\n如2016年秋季学期请回复\n2016a\ns(spring)=春；a(autumn)=秋\n回复其他任意信息将默认查询上一学期的成绩'}
 
 query_pool = LastUpdatedOrderedDict()  # {'stuid': Query}
 query_pool_lock = threading.RLock()
@@ -40,9 +40,7 @@ def text_reply(msg):
     status_lock.acquire()
     user_status = special_status.get(msg['FromUserName'])
     status_lock.release()
-    if not user_status and not msg['Text'] in command_words:
-        return autoreply(msg['Text'], msg['FromUserName'])  # needed to be optimized
-    elif user_status:
+    if user_status:
         status_queue[user_status].put((msg['FromUserName'], msg['Text']))
         return
     elif msg['Text'] in command_words:
@@ -63,12 +61,15 @@ def text_reply(msg):
             开发细节和碎碎念请回复 -help 获取
                       2017/1/30'''
         return helpmsg
+    else:
+        return autoreply(msg['Text'], msg['FromUserName'])  # needed to be optimized
 
 
 daemon_thread_list = [QueryManager(query_pool, query_pool_lock),
                       Login(login_queue, special_status, status_lock, query_pool, query_pool_lock),
                       GetScore(get_score_queue, query_pool, query_pool_lock, special_status, status_lock)]
-itchat.auto_login(qrCallback=showqrcode, hotReload=True)
+# itchat.auto_login(qrCallback=showqrcode, hotReload=True) # test on PC
+itchat.auto_login(enableCmdQR=2, hotReload=True)  # run on server
 for thread in daemon_thread_list:
     thread.setDaemon(True)
     thread.start()
