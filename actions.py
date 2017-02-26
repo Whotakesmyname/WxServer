@@ -82,12 +82,16 @@ class Login(threading.Thread):
                 else:
                     name = query.get_name()
                     cursor = self.connection.cursor()
+                    cursor.execute('SELECT id FROM ID WHERE id == ?', (status[1],))
+                    checkresult = cursor.fetchone()
                     if name is not None:
-                        cursor.execute('INSERT INTO ID VALUES (?, ?, ?, 0)', (status[1], text, name))
+                        if not checkresult:
+                            cursor.execute('INSERT INTO ID VALUES (?, ?, ?, 0)', (status[1], text, name))
                         cursor.execute('INSERT INTO User VALUES (?, ?, ?, ?)',
                                        (wechatid, status[1], query.login_time, query.login_time))
                     else:
-                        cursor.execute('INSERT INTO ID VALUES (?, ?, NULL, 0)', (status[1], text))
+                        if not checkresult:
+                            cursor.execute('INSERT INTO ID VALUES (?, ?, NULL, 0)', (status[1], text))
                         cursor.execute('INSERT INTO User VALUES (?, ?, ?, ?)',
                                        (wechatid, status[1], query.login_time, query.login_time))
                     self.connection.commit()
