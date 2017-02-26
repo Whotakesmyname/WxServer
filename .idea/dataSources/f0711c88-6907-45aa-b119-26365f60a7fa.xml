@@ -46,11 +46,16 @@
       <Position>3</Position>
       <DataType>REAL(0,-1)|6</DataType>
     </column>
-    <key id="14" parent="4">
+    <index id="14" parent="4" name="wechatid_stuid_wechatid_uindex">
       <ColNames>wechatid</ColNames>
+      <Unique>1</Unique>
+    </index>
+    <key id="15" parent="4" name="wechatid_stuid_id_wechatid_pk">
+      <ColNames>id
+wechatid</ColNames>
       <Primary>1</Primary>
     </key>
-    <foreign-key id="15" parent="4" name="#FAKE_User_1">
+    <foreign-key id="16" parent="4" name="#FAKE_User_1">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>id</ColNames>
       <Deferrable>1</Deferrable>

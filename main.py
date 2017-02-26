@@ -20,7 +20,8 @@ def add_friends(msg):
     首次使用查询成绩、快速选课等功能前，请回复login进行登录\n
     回复 h 获得进一步帮助\n
     任何时候回复esc退出当前流程\n
-    源码请访问项目主页：https://github.com/Whotakesmyname/WxServer\n'''
+    源码请访问项目主页：https://github.com/Whotakesmyname/WxServer\n
+    留言请回复 留言+留言内容'''
     itchat.add_friend(**msg['Text'])
     # occupied for check wechatid
     itchat.send_msg(welcomemsg, msg['RecommendInfo']['UserName'])
@@ -60,6 +61,9 @@ def text_reply(msg):
         special_status[msg['FromUserName']] = user_status
         status_lock.release()
         return welcome_msgs[user_status]
+    elif msg['Text'].startswith('留言'):
+        itchat.send_msg('来自' + msg['FromUserName'] + '的新留言：' + msg['Text'][2:], '@00d0dc592ff43edaeff243e722b96d61')
+        return '留言成功'
     elif msg['Text'] == 'h':
         helpmsg = \
             '''             ******帮助******
@@ -68,6 +72,7 @@ def text_reply(msg):
           请注意，当前选课前必须知道目标课程的课程编号！
               成绩查询 请回复 查分
               快速选课 请回复 选课*
+                留言   请回复 留言+留言内容
           除此以外的消息你将会和一个智力低下的机器人聊天，据说她能查天气询时事之类……诸位自行探索
           开发细节和碎碎念请回复 -help 获取（我还没写）
                            2017/1/30'''
