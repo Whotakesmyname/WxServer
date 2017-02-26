@@ -71,7 +71,7 @@ def text_reply(msg):
           在首次使用教务相关功能前请回复 login 进行登录
           请注意，当前选课前必须知道目标课程的课程编号！
               成绩查询 请回复 查分
-              快速选课 请回复 选课*
+              快速选课 请回复 选课
                 留言   请回复 留言+留言内容
           除此以外的消息你将会和一个智力低下的机器人聊天，据说她能查天气询时事之类……诸位自行探索
           开发细节和碎碎念请回复 -help 获取（我还没写）
@@ -87,8 +87,11 @@ daemon_thread_list = [QueryManager(query_pool, query_pool_lock),
                       Login(login_queue, special_status, status_lock, query_pool, query_pool_lock),
                       GetScore(get_score_queue, query_pool, query_pool_lock, special_status, status_lock),
                       SelectCourse(select_course_queue, query_pool, query_pool_lock, special_status, status_lock)]
-itchat.auto_login(qrCallback=showqrcode, hotReload=True) # test on PC
-#itchat.auto_login(enableCmdQR=2, hotReload=True)  # run on server
+import platform
+if platform.system() == 'Windows':
+    itchat.auto_login(qrCallback=showqrcode, hotReload=True) # test on PC
+else:
+    itchat.auto_login(enableCmdQR=2, hotReload=True)  # run on server
 for thread in daemon_thread_list:
     thread.setDaemon(True)
     thread.start()

@@ -64,12 +64,7 @@ def form2pic(form, path=None):
         y += 14
     average = 0
     n_notTX = 0
-    for _row in form:
-        if '*' not in _row[3]:
-            average += int(_row[5])
-            n_notTX += 1
-    else:
-        average /= n_notTX
+
 
     if not path:
         fileobj = BytesIO()
