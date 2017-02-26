@@ -67,7 +67,7 @@ def form2pic(form, path=None):
     for _row in form:
         if '*' not in _row[3]:
             average += int(_row[5])
-            n += 1
+            n_notTX += 1
     else:
         average /= n_notTX
 

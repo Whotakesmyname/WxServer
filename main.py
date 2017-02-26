@@ -87,8 +87,8 @@ daemon_thread_list = [QueryManager(query_pool, query_pool_lock),
                       Login(login_queue, special_status, status_lock, query_pool, query_pool_lock),
                       GetScore(get_score_queue, query_pool, query_pool_lock, special_status, status_lock),
                       SelectCourse(select_course_queue, query_pool, query_pool_lock, special_status, status_lock)]
-# itchat.auto_login(qrCallback=showqrcode, hotReload=True) # test on PC
-itchat.auto_login(enableCmdQR=2, hotReload=True)  # run on server
+itchat.auto_login(qrCallback=showqrcode, hotReload=True) # test on PC
+#itchat.auto_login(enableCmdQR=2, hotReload=True)  # run on server
 for thread in daemon_thread_list:
     thread.setDaemon(True)
     thread.start()
