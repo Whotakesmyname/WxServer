@@ -42,9 +42,9 @@ class Login(threading.Thread):
                 try:
                     int(text)
                 except ValueError:
-                    itchat.send_msg('学号应为8位纯数字，请重新输入纯数字学号', wechatid)
+                    itchat.send_msg('登录流程中|学号应为8位纯数字，请重新输入纯数字学号', wechatid)
                 except AssertionError:
-                    itchat.send_msg('学号应为8位纯数字，请重新输入8位学号', wechatid)
+                    itchat.send_msg('登录流程中|学号应为8位纯数字，请重新输入8位学号', wechatid)
                 else:
                     cursor = self.connection.execute('SELECT * FROM User WHERE wechatid == ?', (wechatid,))
                     dbresult = cursor.fetchone()
@@ -59,19 +59,19 @@ class Login(threading.Thread):
                             login_flag = -1
                     if login_flag == 0:  # wechatid never login
                         self.status[wechatid] = [2, text]
-                        itchat.send_msg('请回复教务网站密码', wechatid)
+                        itchat.send_msg('登录流程中|请回复教务网站密码', wechatid)
                     elif login_flag == 1:  # already login
                         self.exit(wechatid)
                         itchat.send_msg('你已经完成过此学号的登录，无需重复登录\n已退出登陆流程', wechatid)
                     else:  # id ever login but not this studentid
                         self.status[wechatid] = [0, text]
                         # noinspection PyTypeChecker
-                        itchat.send_msg('本微信账号已于{}与学号{}绑定，重新绑定请回复 overwrite ，否则请回复 1 退出'.format(
+                        itchat.send_msg('登录流程中|本微信账号已于{}与学号{}绑定，重新绑定请回复 overwrite ，否则请回复 1 退出'.format(
                             strftimestamp(dbresult['createtime']), dbresult['id']), wechatid)
             elif status[0] == 2:
                 self.status[wechatid][0] = 3
                 self.status[wechatid].append(text)
-                itchat.send_msg('正在验证请稍候……', wechatid)
+                itchat.send_msg('登录流程中|正在验证请稍候……', wechatid)
                 query = Query(self.status[wechatid][1], self.status[wechatid][2])
                 try:
                     query.login()
@@ -82,12 +82,16 @@ class Login(threading.Thread):
                 else:
                     name = query.get_name()
                     cursor = self.connection.cursor()
+                    cursor.execute('SELECT id FROM ID WHERE id == ?', (status[1],))
+                    checkresult = cursor.fetchone()
                     if name is not None:
-                        cursor.execute('INSERT INTO ID VALUES (?, ?, ?, 0)', (status[1], text, name))
+                        if not checkresult:
+                            cursor.execute('INSERT INTO ID VALUES (?, ?, ?, 0)', (status[1], text, name))
                         cursor.execute('INSERT INTO User VALUES (?, ?, ?, ?)',
                                        (wechatid, status[1], query.login_time, query.login_time))
                     else:
-                        cursor.execute('INSERT INTO ID VALUES (?, ?, NULL, 0)', (status[1], text))
+                        if not checkresult:
+                            cursor.execute('INSERT INTO ID VALUES (?, ?, NULL, 0)', (status[1], text))
                         cursor.execute('INSERT INTO User VALUES (?, ?, ?, ?)',
                                        (wechatid, status[1], query.login_time, query.login_time))
                     self.connection.commit()
@@ -100,12 +104,12 @@ class Login(threading.Thread):
             elif status[0] == 0:
                 if text == 'overwrite':
                     self.status[wechatid][0] = 2
-                    itchat.send_msg('请回复该学号的教务网站密码', wechatid)
+                    itchat.send_msg('登录流程中|请回复该学号的教务网站密码', wechatid)
                 elif text == '1':
                     self.exit(wechatid)
                     itchat.send_msg('已退出登录程序', wechatid)
                 else:
-                    itchat.send_msg('重新绑定请回复 overwrite ，否则请回复 1 退出', wechatid)
+                    itchat.send_msg('登录流程中|重新绑定请回复 overwrite ，否则请回复 1 退出', wechatid)
 
 
 class GetScore(threading.Thread):
@@ -162,7 +166,7 @@ class GetScore(threading.Thread):
                     self.exit(wechatid)
                     itchat.send_msg('翻了翻似乎你这学期并没有成绩……将退出查分', wechatid)
                 else:
-                    itchat.send_msg('正在生成{}年{}季学期成绩，请稍候……'.format(result[0][0], result[0][1]), wechatid)
+                    itchat.send_msg('查分流程中|\n正在生成{}年{}季学期成绩，请稍候……'.format(result[0][0], result[0][1]), wechatid)
                     thread = threading.Thread(target=GetScore.send_score_img, args=(result, wechatid))
                     thread.setDaemon(True)
                     thread.start()
@@ -207,7 +211,7 @@ class SelectCourse(threading.Thread):
             if ';' in text:
                 split = self.__class__.pattern.match(text)
                 if not split:
-                    itchat.send_msg('课序号应为纯数字，请检查输入后重新输入', wechatid)
+                    itchat.send_msg('选课流程中|课序号应为纯数字，请检查输入后重新输入', wechatid)
                     continue
                 else:
                     courseid = split.group(1)
@@ -242,7 +246,7 @@ class SelectCourse(threading.Thread):
 
                 t = threading.Thread(target=select, args=(self, query, wechatid))
                 t.setDaemon(True)
-                itchat.send_msg('正在尝试选课请稍后……', wechatid)
+                itchat.send_msg('选课流程中|正在尝试选课请稍候……', wechatid)
                 t.start()
 
 
