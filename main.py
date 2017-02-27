@@ -99,4 +99,4 @@ else:
 for thread in daemon_thread_list:
     thread.setDaemon(True)
     thread.start()
-itchat.run()
+itchat.run(debug=True)
