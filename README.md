@@ -7,8 +7,8 @@
 A server offering academic affair supports on Wechat, based on itchat.
 This is a multithreading version server in order to handle large amounts of concurrent requests, so besides 'Login' class and 'PoolManager' class, other actions have been thread safe.
 
-#The old server on SAE, based on Wechat MP API is abandoned.
+The old server on SAE, based on Wechat MP API is abandoned.
 
-#The BFSU academic affair website's API has been rewritten and optimized. You can find it in bfsujwc.py.
+The BFSU academic affair website's API has been rewritten and optimized. You can find it in bfsujwc.py.
 
-#itchat is an amazing module saving me a lot of time.
+itchat is an amazing module saving me a lot of time.
